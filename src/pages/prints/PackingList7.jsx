@@ -1929,11 +1929,18 @@ const PackingList7 = ({ token, invoiceNo, printName, urls, evn, ApiVer }) => {
                                     {result?.mainTotal?.grosswt?.toFixed(3)} gm
                                   </div>
                                 </div>
+                                {result?.mainTotal?.lossWt === 0 ? "" :
+                                  <div className="d-flex justify-content-between px-1">
+                                    <div className="w-50 fw-bold">N + L WT</div>
+                                    <div className="w-50 end_dp10_pcl7 pe-1">
+                                      {result?.mainTotal?.metal?.Wt?.toFixed(3)}{" "}gm
+                                    </div>
+                                  </div>
+                                }
                                 <div className="d-flex justify-content-between px-1">
                                   <div className="w-50 fw-bold">NET WT</div>
                                   <div className="w-50 end_dp10_pcl7 pe-1">
-                                    {result?.mainTotal?.metal?.Wt?.toFixed(3)}{" "}
-                                    gm
+                                    {(result?.mainTotal?.metal?.Wt - result?.mainTotal?.lossWt)?.toFixed(3)} gm
                                   </div>
                                 </div>
                                 <div className="d-flex justify-content-between px-1">
