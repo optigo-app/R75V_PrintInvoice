@@ -5,6 +5,7 @@ import {
   apiCall,
   checkMsg,
   fixedValues,
+  formatAmount,
   handleImageError,
   handlePrint,
   isObjectEmpty,
@@ -482,7 +483,7 @@ const DetailPrint5 = ({ token, invoiceNo, printName, urls, evn, ApiVer }) => {
             alt=""
             onError={handleImageErrors}
             className="w-100 h-auto ms-auto d-block object-fit-contain headImg_Pcl7"
-            style={{ maxWidth: "230px" }}
+            style={{ }}
             height={120}
             width={150}
           />
@@ -967,12 +968,12 @@ const DetailPrint5 = ({ token, invoiceNo, printName, urls, evn, ApiVer }) => {
                   ></div>
                   <div className={`${style?.labour} border-end text-center`}>
                     <p className="text-end fw-bold">
-                      {NumberWithCommas(e?.DiscountAmt, 2)}
+                      {IsEvnQuote ? NumberWithCommas(e?.DiscountAmt / headerData?.CurrencyExchRate, 2) : NumberWithCommas(e?.DiscountAmt, 2)}
                     </p>
                   </div>
                   <div className={`${style?.totalAmount} text-end fw-bold`}>
                     <p className="text-end fw-bold">
-                      {NumberWithCommas(e?.TotalAmount, 2)}
+                      {IsEvnQuote ? NumberWithCommas((e?.TotalAmount - discountAmt) / headerData?.CurrencyExchRate, 2) : NumberWithCommas(e?.TotalAmount - discountAmt, 2)}
                     </p>
                   </div>
                 </div>
@@ -1000,12 +1001,12 @@ const DetailPrint5 = ({ token, invoiceNo, printName, urls, evn, ApiVer }) => {
           </div>
           <div className={`${style?.totalAmount} SpcAtRigt`}>
             {discountAmt !== 0 && <p className="text-end">
-              {NumberWithCommas(discountAmt, 2)}
+              {IsEvnQuote ? NumberWithCommas(discountAmt / headerData?.CurrencyExchRate, 2) : NumberWithCommas(discountAmt, 2)}
             </p>}
             {taxes.map((e, i) => {
               return (
                 <p className="text-end" key={i}>
-                  {IsEvnQuote ? e?.amount/ headerData?.CurrencyExchRate : e?.amount}
+                  {IsEvnQuote ? formatAmount(e?.amount / headerData?.CurrencyExchRate ,2) : formatAmount(e?.amount,2)}
                 </p>
               );
             })}
@@ -1097,7 +1098,7 @@ const DetailPrint5 = ({ token, invoiceNo, printName, urls, evn, ApiVer }) => {
             <div>
               <p className={`text-end fw-bold`}>
                 {total?.TotalAmount !== 0 &&
-                  IsEvnQuote ? NumberWithCommas(total?.TotalAmount / headerData?.CurrencyExchRate, 2) : NumberWithCommas(total?.TotalAmount, 2)}
+                  IsEvnQuote ? NumberWithCommas((total?.TotalAmount - discountAmt) / headerData?.CurrencyExchRate, 2) : NumberWithCommas(total?.TotalAmount - discountAmt, 2)}
               </p>
             </div>
           </div>
@@ -1207,7 +1208,7 @@ const DetailPrint5 = ({ token, invoiceNo, printName, urls, evn, ApiVer }) => {
                         className={`d-flex justify-content-between border-bottom position-absolute left-0 bottom-0 ${style?.min_height_15} border-top w-100 lightGrey end-0 ps-1 pe-1`}
                       >
                         <p className="fw-bold">TOTAL</p>
-                        <p className="">{IsEvnQuote ? NumberWithCommas(total?.TotalAmount / headerData?.CurrencyExchRate, 2) : NumberWithCommas(total?.TotalAmount, 2)}</p>
+                        <p className="">{IsEvnQuote ? NumberWithCommas((total?.TotalAmount - discountAmt) / headerData?.CurrencyExchRate, 2) : NumberWithCommas(total?.TotalAmount - discountAmt, 2)}</p>
                       </div>
                     </div>
                   </div>
