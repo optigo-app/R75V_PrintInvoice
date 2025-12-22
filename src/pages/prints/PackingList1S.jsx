@@ -38,6 +38,11 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
       Pcs: 0,
       Amount: 0,
     },
+    Misc: {
+      Wt: 0,
+      Pcs: 0,
+      Amount: 0,
+    },
     otherAmount: 0,
     MakingAmount: 0,
     DiscountAmt: 0,
@@ -55,7 +60,6 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
   const [taxes, setTaxes] = useState([]);
 
   const [diaQlty, setDiaQlty] = useState(false);
-
   const checkDiaQlty = () => {
     if (diaQlty) {
       setDiaQlty(false);
@@ -63,8 +67,17 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
       setDiaQlty(true);
     }
   };
+  
+  const [misc, setMisc] = useState(true);
+  const checkMisc = () => {
+    setMisc(prevState => !prevState);
+  };
 
   const loadData = (data) => {
+
+    let address = data?.BillPrint_Json[0]?.Printlable?.split("\r\n");
+    data.BillPrint_Json[0].address = address;
+
     let exchangerate = data?.BillPrint_Json[0]?.CurrencyExchRate;
     setJson0Data(data?.BillPrint_Json[0]);
     let newArr = [];
@@ -81,6 +94,11 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
       NetWt: 0,
     };
     let colorStone = {
+      Wt: 0,
+      Pcs: 0,
+      Amount: 0,
+    };
+    let Misc = {
       Wt: 0,
       Pcs: 0,
       Amount: 0,
@@ -153,6 +171,11 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
         Pcs: 0,
         Amount: 0,
       };
+      let rowWiseMiscTotal = {
+        Wt: 0,
+        Pcs: 0,
+        Amount: 0,
+      };
       let rowWiseMetalTotal = {
         grossWt: e?.grosswt,
         NetWt: e?.NetWt,
@@ -168,6 +191,7 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
       let netWtLoss = 0;
       let count = 0;
       let metalWt = 0;
+      let otherMiscAmount = 0;
       data?.BillPrint_Json2.forEach((ele) => {
         if (ele?.StockBarcode === e?.SrJobno) {
           if (ele?.MasterManagement_DiamondStoneTypeid === 1) {
@@ -239,12 +263,13 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
                 // otherChargess.Amount += ele?.Amount;
             } else {
               misc.push(ele)
-              rowWiseColorStoneTotal.Wt += ele?.Wt;
-              rowWiseColorStoneTotal.Pcs += ele?.Pcs;
-              rowWiseColorStoneTotal.Amount += ele?.Amount;
-              colorStone.Wt += ele?.Wt;
-              colorStone.Pcs += ele?.Pcs;
-              colorStone.Amount += ele?.Amount;
+              rowWiseMiscTotal.Wt += ele?.Wt;
+              rowWiseMiscTotal.Pcs += ele?.Pcs;
+              rowWiseMiscTotal.Amount += ele?.Amount;
+              Misc.Wt += ele?.Wt;
+              Misc.Pcs += ele?.Pcs;
+              Misc.Amount += ele?.Amount;
+              otherMiscAmount += ele?.Amount;
             }
           }
         }
@@ -262,6 +287,7 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
       obj.colors = colors;
       obj.misc = misc;
       obj.netWtLoss = netWtLoss;
+      obj.otherMiscAmount = otherMiscAmount;
       obj.otherTotal = otherTotal;
       obj.otherCharge = otherCharge;
       obj.otherChargess = otherChargess;
@@ -273,6 +299,7 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
       );
       obj.rowWiseDiamondTotal = rowWiseDiamondTotal;
       obj.rowWiseColorStoneTotal = rowWiseColorStoneTotal;
+      obj.rowWiseMiscTotal = rowWiseMiscTotal;
       obj.rowWiseMetalTotal = rowWiseMetalTotal;
       obj.SettingAmount = SettingAmount;
       newArr.push(obj);
@@ -307,6 +334,7 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
       metalAmount: metalAmounts,
       diamondTotal: diamondTotal,
       colorStone: colorStone,
+      Misc: Misc,
       metalTotal: metalTotal,
       otherAmount: otherAmount,
       MakingAmount: MakingAmount,
@@ -451,12 +479,20 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
     }, []);
   };
 
-  const FinalTotalMisc = data?.reduce((total, e) => {
-    return total + (e?.misc?.reduce((innerAcc, ele) => innerAcc + (ele?.Amount || 0), 0) || 0);
-  }, 0) || 0;
+  function extractTextFromHTML(htmlString) {
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = htmlString;
+    
+    return tempDiv.textContent || tempDiv.innerText || "";
+  }
+    
+  const plainText = extractTextFromHTML(json0Data?.Declaration);
+  // console.log("plainText", plainText);
 
   // console.log("FinalTotalMisc", FinalTotalMisc);
   // console.log("data", data);
+  // console.log("json0Data", json0Data);
+  console.log("json0Data?.address", json0Data?.address);
   
   return (
     <>
@@ -468,8 +504,8 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
             className={`container max_width_container pad_60_allPrint ${style?.container} px-1`}
           >
             {/* print Button */}
-            <div className="printBtn_sec d-flex justify-content-end align-items-center  pt-4 d_none_pcl1">
-              <div className="mx-3 d-flex align-items-center">
+            <div className="printBtn_sec d-flex justify-content-end align-items-center pt-4 mb-2 d_none_pcl1">
+              <div className="mx-1 d-flex align-items-center">
                 <input
                   type="checkbox"
                   value={diaQlty}
@@ -478,12 +514,26 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
                 />
                 <label
                   htmlFor="diaqlty"
-                  className="mx-2 user-select-none fspcl"
+                  className={`mx-2 user-select-none fspcl ${style?.CheckBxFnt}`}
                 >
                   Diamond Quality
                 </label>
               </div>
-              <div className={`printBtn_sec text-end  `}>
+              <div className="mx-1 d-flex align-items-center">
+                <input
+                  type="checkbox"
+                  checked={misc}
+                  onChange={checkMisc}
+                  id="misc"
+                />
+                <label
+                  htmlFor="misc"
+                  className={`mx-2 user-select-none fspcl ${style?.CheckBxFnt}`}
+                >
+                  MISC
+                </label>
+              </div>
+              <div className={`printBtn_sec text-end`}>
                 <input
                   type="button"
                   className="btn_white blue"
@@ -494,81 +544,120 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
               </div>
             </div>
 
-            {/* Print Logo */}
-            <div className="pt-2">
-              <div className="d-flex flex-column justify-content-end align-items-end">
-                {isImageWorking && json0Data?.PrintLogo !== "" && (
+            {/* print head text */}
+            <div className={`${style?.headText_pcls} mb-1 d-flex align-items-center`}> 
+              {json0Data?.PrintHeadLabel === "" ? "PACKING LIST" : json0Data?.PrintHeadLabel}
+            </div>
+
+            {/* Comapny Header */}
+            <div className={`px-1 ${style?.spbrWord} ${style?.com_fs_pcl3} ${style?.mainHeadWD}`}>
+                <div className={`justify-content-start ${style?.spbrWord} ${style?.fs_14_pcls}`}>
+                  <div className={`${style?.fs_16_pcls} fw-bold py-1 ${style?.spbrWord}`}>
+                    {json0Data?.CompanyFullName}
+                  </div>
+                  <div>
+                    <span>{json0Data?.CompanyAddress !== "" && `${json0Data?.CompanyAddress}`}</span>
+                    <span>{json0Data?.CompanyAddress2 !== "" && `${json0Data?.CompanyAddress2}`}</span>{" "}
+                    {json0Data?.CompanyCity}{" "}
+                    {json0Data?.CompanyCity}
+                    {json0Data?.CompanyPinCode !== "" && `- ${json0Data?.CompanyPinCode}`}{" "}
+                    {json0Data?.CompanyState !== "" && `, ${json0Data?.CompanyState}`}(
+                    {json0Data?.CompanyCountry}){" "}
+                  </div>
+                  {/* <div>{json0Data?.CompanyAddress2}</div> */}
+                  {/* <div>{json0Data?.CompanyCity}</div> */}
+                  <div>
+                    <span>{json0Data?.CompanyTellNo !== "" && `T : ${json0Data?.CompanyTellNo}`}</span>{" "}
+                    <span>
+                      {json0Data?.CompanyEmail !== "" && `${json0Data?.CompanyEmail}`}{" "}
+                      {json0Data?.CompanyWebsite !== "" && `| ${json0Data?.CompanyWebsite}`}{" "}
+                    </span>
+                      {json0Data?.Company_VAT_GST_No !== "" && `| ${json0Data?.Company_VAT_GST_No}`}{" "}
+                      {json0Data?.Company_CST_STATE !== "" && `| ${json0Data?.Company_CST_STATE}`}
+                      {json0Data?.Company_CST_STATE_No !== "" && `-${json0Data?.Company_CST_STATE_No}`}
+                      {json0Data?.Pannumber !== "" && ` | PAN- ${json0Data?.Pannumber}`}
+                  </div>
+                  {/* <div>T {json0Data?.CompanyTellNo}</div> */}
+                  {/* <div>
+                    {json0Data?.CompanyEmail} |{" "}
+                    {json0Data?.CompanyWebsite}
+                  </div> */}
+                  <div>
+                    {/* {json0Data?.Company_VAT_GST_No} |{" "}
+                    {json0Data?.Company_CST_STATE}-
+                    {json0Data?.Company_CST_STATE_No} | PAN-
+                    {json0Data?.Pannumber} */}
+                  </div>
+                </div>
+
+                {/* Company Logo */}
+                {json0Data?.PrintLogo !== "" && (
                   <img
                     src={json0Data?.PrintLogo}
                     alt=""
-                    className="w-100 d-flex justify-content-end align-items-end"
+                    className={`w-100 h-auto ms-auto d-block object-fit-contain`}
                     onError={handleImageErrors}
                     height={120}
                     width={150}
-                    style={{ maxWidth: "108px" }}
+                    style={{ maxWidth: "116px" }}
                   />
                 )}
-
-                <p className={`text-end pt-1 fw-bold ${style?.font_12} ${style?.packinhList1_top_line}`} >
-                  {json0Data?.CompanyFullName}
-                </p>
-                <p
-                  className={`text-end pt-1 fw-bold ${style?.font_12} ${style?.packinhList1_top_line}`}
-                >
-                  {json0Data?.CompanyAddress} {json0Data?.CompanyAddress2}{" "}
-                  {json0Data?.CompanyCity} - {json0Data?.CompanyPinCode}
-                </p>
-              </div>
-              {json0Data?.PrintHeadLabel !== "" ? (
-                <p
-                  className={`fw-bold text-center pt-1 pb-2`}
-                  style={{ fontSize: "17px" }}
-                >
-                  {json0Data?.PrintHeadLabel}
-                </p>
-              ) : 
-                <p className={`fw-bold text-center pt-1 pb-1`} style={{ fontSize: "17px" }}>PACKING LIST</p>
-              }
-              {json0Data?.PrintRemark !== "" && (
-                <p
-                  className={`fw-bold text-center ${style?.font_11}`}
-                  dangerouslySetInnerHTML={{ __html: json0Data?.PrintRemark }}
-                ></p>
-              )}
             </div>
 
-            {/* Party */}
-            <div
-              className={`pt-4 d-flex justify-content-between align-items-between`}
-            >
-              <div className={`col-6 ${style?.font_14}`}>
-                <p className={``}>
-                  <span className="fw-bold">Party:</span>{" "}
-                  {json0Data?.customerfirmname}
-                </p>
+            {/* customer header */}
+            <div className={`d-flex mt-1 mb-1 ${style?.brall_pcls} ${style?.spbrWord}`}>
+              <div className={`${style?.bright_pcls} p-1 ${style?.com_fs_pcl3}`} style={{ width: "35%" }}>
+                <div>{json0Data?.lblBillTo}</div>
+                <div
+                  className={`px-1 ${style?.fsgdp10_pcl7_3}`}
+                  style={{ whiteSpace: "normal", wordBreak: "break-word" }}
+                >
+                  <b className={`${style?.fs_14_pcls}`}>{json0Data?.customerfirmname}</b>
+                    {json0Data?.customerAddress2 &&
+                      `, ${json0Data.customerAddress2}`}
+                    {json0Data?.customerAddress1 &&
+                      ` ${json0Data.customerAddress1}`}
+                    {json0Data?.customerAddress3 &&
+                      ` ${json0Data.customerAddress3}`}
+                    {json0Data?.customercity1 &&
+                      ` ${json0Data.customercity1}`}
+                    {json0Data?.PinCode && ` - ${json0Data.PinCode}`}
+                  </div>
+                  <div className="px-1">
+                    {json0Data?.customeremail1}{" "}
+                    {json0Data?.vat_cst_pan}
+                    {json0Data?.Cust_CST_STATE}-
+                    {json0Data?.Cust_CST_STATE_No}
+                  </div>
               </div>
-              <div
-                className={`text-end ${style?.font_11}`}
-                style={{ width: "180px", minWidth: "180px" }}
-              >
-                <div className="d-flex justify-content-end pb-1">
-                  <p className={`${style?.font_11}`} style={{ width: "90px" }}>Invoice No :</p>
-                  <p className={`${style?.font_11} text-end fw-bold`} style={{ width: "70px" }}>
-                    {json0Data?.InvoiceNo}
-                  </p>
+              <div className={`${style?.bright_pcls} p-1 ${style?.com_fs_pcl3}`} style={{ width: "35%" }}>
+                <div>Ship To,</div>
+                <div className={`px-1 ${style?.fsgdp10_pcl7_3}`}>
+                  <b className={`${style?.fs_14_pcls}`}>{json0Data?.customerfirmname}</b>
+                    {json0Data?.address?.map((e, i) => {
+                      return (
+                        <div key={i}>
+                          {e}
+                        </div>
+                      );
+                    })}
                 </div>
-                <div className="d-flex justify-content-end pb-2">
-                  <p className={`${style?.font_11}`} style={{ width: "90px" }}>Date :</p>
-                  <p className={`${style?.font_11} text-end fw-bold`} style={{ width: "70px" }}>
-                    {json0Data?.EntryDate}
-                  </p>
+              </div>
+              <div className={`p-1 ${style?.com_fs_pcl3}`} style={{ width: "30%" }}>
+                <div className={`d-flex align-items-center`}>
+                  <div className={`fw-bold ${style?.billbox_pcls}`}>INVOICE NO </div>
+                  <div>{json0Data?.InvoiceNo}</div>
+                </div>
+                <div className={`d-flex align-items-center`}>
+                  <div className={`fw-bold ${style?.billbox_pcls}`}>DATE </div>
+                  <div>{json0Data?.EntryDate}</div>
                 </div>
               </div>
             </div>
 
             {/* Table Header */}
             <div
-              className={`border-black border-start border-end border-top mb-1 no_break ${style?.rowWisePad} ${style?.rowHeader} ${style?.word_break}`}
+              className={`border-grey border-start border-end border-top mb-1 no_break ${style?.rowWisePad} ${style?.rowHeader} ${style?.word_break}`}
             >
               <div className={`d-flex border-bottom lightGrey`}>
                 <div
@@ -705,7 +794,7 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
                     key={i}
                     className={`border-top no_break ${style?.rowWisePad} ${style?.word_break}`}
                   >
-                    <div className="border-start border-end border-black">
+                    <div className={`${style?.pbia_pcl3} border-start border-end border-grey`}>
                       <div className={`d-flex ${style?.packingListRow}`}>
                         <div
                           className={`${style?.pad_1} ${style?.srNo} border-end text-center`}
@@ -899,7 +988,7 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
                               {e?.colors.map((el, indd) => {
                                 return <p key={indd}>{el?.ShapeName}</p>;
                               })}
-                              {e?.misc.map((el, indd) => {
+                              {misc && e?.misc.map((el, indd) => {
                                 return <p key={indd}>M: {el?.ShapeName}</p>;
                               })}
                             </div>
@@ -913,7 +1002,7 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
                                   </p>
                                 );
                               })}
-                              {e?.misc.map((el, indd) => {
+                              {misc && e?.misc.map((el, indd) => {
                                 return (
                                   <p key={indd}>
                                     {NumberWithCommas(el?.Wt, 2)}
@@ -931,7 +1020,7 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
                                   </p>
                                 );
                               })}
-                              {e?.misc.map((el, indd) => {
+                              {misc && e?.misc.map((el, indd) => {
                                 return (
                                   <p key={indd}>
                                     {NumberWithCommas(el?.Pcs, 0)}
@@ -949,7 +1038,7 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
                                   </p>
                                 );
                               })}
-                              {e?.misc.map((el, indd) => {
+                              {misc && e?.misc.map((el, indd) => {
                                 return (
                                   <p key={indd}>
                                     {NumberWithCommas(el?.Rate, 2)}
@@ -970,7 +1059,7 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
                                   </p>
                                 );
                               })}
-                              {e?.misc.map((el, indd) => {
+                              {misc && e?.misc.map((el, indd) => {
                                 return (
                                   <p key={indd}>
                                     {NumberWithCommas(
@@ -1028,6 +1117,11 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
                                   )
                                 );
                               })}
+
+                              {(e?.otherMiscAmount !== 0 && misc === false) && (
+                                <p className={`${style?.min_height} ${style?.spbrWord} text-end`}>Other</p>
+                              )}
+
                               {e?.otherCharge?.map((ele, ind) => {
                                 return (
                                   +ele?.value !== 0 &&
@@ -1070,6 +1164,16 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
                                 );
                               })}
 
+                              {(e?.otherMiscAmount !== 0 && misc === false) && (
+                                <p className={`${style?.min_height}`}>
+                                  {NumberWithCommas(
+                                    e?.otherMiscAmount /
+                                      json0Data?.CurrencyExchRate,
+                                    2
+                                  )}
+                                </p>
+                              )}
+
                               {e?.otherCharge?.map((ele, ind) => {
                                 return (
                                   +ele?.value !== 0 &&
@@ -1083,6 +1187,7 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
                                   )
                                 );
                               })}
+
                               {e?.TotalDiamondHandling !== 0 && (
                                 <p className={`${style?.min_height}`}>
                                   {NumberWithCommas(e?.TotalDiamondHandling, 2)}
@@ -1112,7 +1217,7 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
                       </div>
                     </div>
 
-                    <div className="border-start border-end border-black">
+                    <div className={`${style?.pbia_pcl3} border-start border-end border-grey`}>
                       <div className={`d-flex  ${style?.packingListRow}`}>
                         <div
                           className={`${style?.pad_1} ${style?.srNo} border-end text-center`}
@@ -1225,8 +1330,11 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
                               className={`${style?.wid_20} text-end border-end `}
                             >
                               <p className={`fw-bold w-100 border-top `}>
-                                {e?.rowWiseColorStoneTotal.Wt !== 0 &&
-                                  NumberWithCommas(
+                                {(e?.rowWiseColorStoneTotal.Wt !== 0 || e?.rowWiseMiscTotal.Wt !== 0) &&
+                                  misc ? NumberWithCommas(
+                                    e?.rowWiseColorStoneTotal.Wt + e?.rowWiseMiscTotal.Wt,
+                                    2
+                                  ) : NumberWithCommas(
                                     e?.rowWiseColorStoneTotal.Wt,
                                     2
                                   )}
@@ -1236,8 +1344,11 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
                               className={`${style?.wid_20} text-end border-end `}
                             >
                               <p className={`fw-bold w-100 border-top `}>
-                                {e?.rowWiseColorStoneTotal.Pcs !== 0 &&
-                                  NumberWithCommas(
+                                {(e?.rowWiseColorStoneTotal.Pcs !== 0 || e?.rowWiseMiscTotal.Pcs !== 0) &&
+                                  misc ? NumberWithCommas(
+                                    e?.rowWiseColorStoneTotal.Pcs + e?.rowWiseMiscTotal.Pcs,
+                                    0
+                                  ) : NumberWithCommas(
                                     e?.rowWiseColorStoneTotal.Pcs,
                                     0
                                   )}
@@ -1250,8 +1361,12 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
                             </div>
                             <div className={`${style?.wid_20} text-end`}>
                               <p className={`fw-bold w-100 border-top `}>
-                                {e?.rowWiseColorStoneTotal.Amount !== 0 &&
-                                  NumberWithCommas(
+                                {(e?.rowWiseColorStoneTotal.Amount !== 0 || e?.rowWiseMiscTotal.Amount !== 0) &&
+                                  misc ? NumberWithCommas(
+                                    e?.rowWiseColorStoneTotal.Amount + e?.rowWiseMiscTotal.Amount /
+                                      json0Data?.CurrencyExchRate,
+                                    2
+                                  ) : NumberWithCommas(
                                     e?.rowWiseColorStoneTotal.Amount /
                                       json0Data?.CurrencyExchRate,
                                     2
@@ -1293,8 +1408,11 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
                               <p
                                 className={`w-100 border-top fw-bold  fw-bold`}
                               >
-                                {NumberWithCommas(
+                                {misc ? NumberWithCommas(
                                   e?.otherTotals / json0Data?.CurrencyExchRate,
+                                  2
+                                ): NumberWithCommas(
+                                  e?.otherTotals + e?.otherMiscAmount / json0Data?.CurrencyExchRate,
                                   2
                                 )}
                               </p>
@@ -1323,7 +1441,7 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
 
                     {/* Per Job Discount Row */}
                     {e?.DiscountAmt !== 0 && (
-                      <div className="border-start border-end border-black">
+                      <div className={`border-start ${style?.pbia_pcl3} border-end border-grey`}>
                         <div className="d-flex border-bottom border-top">
                           <div
                             className={`${style?.pad_1} fw-bold ${style?.srNo} border-end text-center`}
@@ -1481,10 +1599,8 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
               })}
 
             {/* Final Total Row */}
-            <div
-              className={`border-start border-end border-black no_break ${style?.rowWisePad} ${style?.word_break}`}
-            >
-              <div className="d-flex  border-bottom border-top  lightGrey">
+            <div className={`border-start ${style?.pbia_pcl3} border-end border-grey no_break ${style?.rowWisePad} ${style?.word_break}`}>
+              <div className={`d-flex border-bottom lightGrey ${data?.find((e) => e?.DiscountAmt === 0) ? "border-top" : ""}`}>
                 <div
                   className={`${style?.pad_1} fw-bold ${style?.total} text-center border-end d-flex align-items-center justify-content-center`}
                 >
@@ -1530,6 +1646,7 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
                     </div>
                   </div>
                 </div>
+
                 <div
                   className={` fw-bold ${style?.metal} border-end d-flex flex-wrap`}
                 >
@@ -1562,6 +1679,7 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
                     </div>
                   </div>
                 </div>
+
                 <div
                   className={` fw-bold ${style?.stone} border-end d-flex flex-wrap`}
                 >
@@ -1572,12 +1690,12 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
                     <div
                       className={`${style?.wid_20} text-end border-end d-flex align-items-center justify-content-end`}
                     >
-                      <p>{NumberWithCommas(total?.colorStone?.Wt, 2)}</p>
+                      <p>{misc ? NumberWithCommas(total?.colorStone?.Wt + total?.Misc?.Wt, 2) : NumberWithCommas(total?.colorStone?.Wt, 2)}</p>
                     </div>
                     <div
                       className={`${style?.wid_20} text-end border-end d-flex align-items-center justify-content-end`}
                     >
-                      <p>{NumberWithCommas(total?.colorStone?.Pcs, 0)}</p>
+                      <p>{misc ? total?.colorStone?.Pcs + total?.Misc?.Pcs : total?.colorStone?.Pcs}</p>
                     </div>
                     <div
                       className={`${style?.wid_20} text-end border-end d-flex align-items-center justify-content-end`}
@@ -1588,7 +1706,11 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
                       className={`${style?.wid_20} text-end d-flex align-items-center justify-content-end`}
                     >
                       <p>
-                        {NumberWithCommas(
+                        {misc ?  NumberWithCommas(
+                          total?.colorStone?.Amount + total?.Misc?.Amount /
+                            json0Data?.CurrencyExchRate,
+                          2
+                        ) : NumberWithCommas(
                           total?.colorStone?.Amount /
                             json0Data?.CurrencyExchRate,
                           2
@@ -1597,6 +1719,7 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
                     </div>
                   </div>
                 </div>
+
                 <div
                   className={` fw-bold ${style?.labour} border-end d-flex flex-wrap`}
                 >
@@ -1621,6 +1744,7 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
                     </div>
                   </div>
                 </div>
+
                 <div
                   className={` fw-bold ${style?.other} border-end d-flex flex-wrap`}
                 >
@@ -1632,14 +1756,18 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
                       className={`${style?.pad_1} col-6 text-end d-flex align-items-center justify-content-end`}
                     >
                       <p>
-                        {NumberWithCommas(
+                        {misc ? NumberWithCommas(
                           total?.otherAmount / json0Data?.CurrencyExchRate,
+                          2
+                        ) : NumberWithCommas(
+                          total?.otherAmount + total?.Misc?.Amount / json0Data?.CurrencyExchRate,
                           2
                         )}
                       </p>
                     </div>
                   </div>
                 </div>
+
                 <div
                   className={`${style?.pad_1} fw-bold ${style?.price} d-flex flex-wrap`}
                 >
@@ -1660,9 +1788,7 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
             </div>
 
             {/* Taxes & Total */}
-            <div
-              className={`d-flex border-start border-end border-bottom border-black no_break ${style?.rowWisePad} ${style?.word_break}`}
-            >
+            <div className={`${style?.pbia_pcl3} d-flex border-start border-end border-bottom border-grey no_break ${style?.rowWisePad} ${style?.word_break}`}>
               <div className={`${style?.pad_1}  ${style?.discount} text-end `}>
                 <p className="">Total Discount</p>
                 {taxes?.map((e, i) => {
@@ -1711,6 +1837,18 @@ const PackingList1S = ({ urls, token, invoiceNo, printName, evn, ApiVer }) => {
                 </div>
               </div>
             </div>
+
+            {/* Instruction */}
+            {plainText && (
+              <div className={`${style?.intru_qrC} mt-1 ${style?.pbia_pcl3}`}>
+                <div className={`fw-bold ${style?.instruct}`}>Terms & Condition:</div>
+                <div className={`${style?.tb_fs_pclsINS}`}
+                  dangerouslySetInnerHTML={{
+                    __html: json0Data?.Declaration,
+                  }}
+                ></div>
+              </div>
+            )}
           </div>
         </>
       ) : (
