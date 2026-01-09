@@ -455,11 +455,19 @@ const DetailPrintS = ({ token, invoiceNo, printName, urls, evn, ApiVer }) => {
         if(find_record === -1){
           finalArr.push(b);
         }else{
-          if(finalArr[find_record]?.GroupJob !== finalArr[find_record]?.SrJobno){
-              finalArr[find_record].designno = b?.designno;
-              finalArr[find_record].HUID = b?.HUID; 
-              finalArr[find_record].DesignImage = b?.DesignImage;
+          if (
+            // finalArr[find_record]?.GroupJob === finalArr[find_record]?.SrJobno  //CQ For DesignNo jbsvs 09/01/26
+            b?.GroupJob === b?.SrJobno
+          ) {
+            finalArr[find_record].designno = b?.designno;
+            finalArr[find_record].HUID = b?.HUID;
           }
+
+          //CQ For Image jbsvs 09/01/26
+          if (!finalArr[find_record].DesignImage && b?.DesignImage) {
+            finalArr[find_record].DesignImage = b?.DesignImage;
+          }
+
           finalArr[find_record].grosswt += b?.grosswt;
           finalArr[find_record].NetWt += b?.NetWt;
           finalArr[find_record].LossWt += b?.LossWt;
